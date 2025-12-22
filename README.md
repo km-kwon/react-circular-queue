@@ -1,16 +1,24 @@
+README.md 파일로 생성해 드렸습니다. 아래 링크를 통해 다운로드하실 수 있습니다.
+
+````markdown
 # circular-queue-react
 
-High-performance circular buffer/queue for TypeScript and React. Zero dependencies, perfect for logs, streaming data, and real-time updates.
+High-performance circular buffer/queue for TypeScript and React.  
+Zero dependencies (**React optional**) — perfect for logs, streaming data, rolling windows, and real-time UI updates.
+
+---
 
 ## Features
 
-- 🔄 **Circular Buffer** - Efficient fixed-size buffer with automatic overflow handling
-- 📦 **Buffer Manager** - High-level API for common buffer operations
-- ⚛️ **React Hook** - Built-in `useCircularBuffer` hook for React applications
-- 🎯 **Type-Safe** - Full TypeScript support with generics
-- ⚡ **High Performance** - O(1) operations for push/get
-- 🪶 **Zero Dependencies** - Pure TypeScript implementation (React optional)
-- 🔧 **Flexible** - Works for logs, streaming data, caching, undo/redo, and more
+- 🔄 **CircularBuffer (Low-level)** — direction-based circular buffer primitive (FRONT/BACK)
+- 📦 **BufferManager (High-level)** — convenient API (push/pop single or arrays, peek helpers, utilities)
+- ⚛️ **React Hook** — `useCircularBuffer` for automatic re-rendering in React
+- 🎯 **Type-Safe** — full TypeScript generics support
+- ⚡ **Fast** — O(1) push/pop/peek operations
+- 🪶 **Zero Dependencies** — pure TypeScript implementation (**React is optional**)
+- 🔧 **Flexible** — logs, streaming feeds, caching, undo/redo, rolling averages, etc.
+
+---
 
 ## Installation
 
@@ -21,108 +29,128 @@ yarn add circular-queue-react
 # or
 pnpm add circular-queue-react
 ```
+````
 
-**React Support:** React 16.8+, 17, 18, and 19 ✅
+> **React Support:** React 16.8+, 17, 18, 19 ✅
+> _(React is required only if you use `useCircularBuffer`.)_
+
+---
 
 ## Quick Start
 
-### CircularBuffer (Low-level API)
+### 1) CircularBuffer (Low-level API)
 
-```typescript
-import { CircularBuffer } from 'circular-queue-react';
+`CircularBuffer` is a minimal primitive:
 
-// Create a buffer with capacity of 1000
-const buffer = new CircularBuffer<string>(1000);
+- `push(item, direction)` — insert
+- `pop(direction)` — remove 1
+- `get(direction, count?)` — peek (non-destructive)
+- `iterable` (oldest → newest)
 
-// Add items
-buffer.push('item 1');
-buffer.push('item 2');
-buffer.pushFront('item 0'); // Add to front
+```ts
+import { CircularBuffer, Direction } from "circular-queue-react";
 
-// Get items
-const first = buffer.first(); // 'item 0'
-const last = buffer.last();   // 'item 2'
-const item = buffer.get(1);   // 'item 1'
+const buf = new CircularBuffer<string>(3);
 
-// Convert to array
-const all = buffer.toArray(); // ['item 0', 'item 1', 'item 2']
+// Push to BACK (newest side)
+buf.push("A", Direction.BACK);
+buf.push("B", Direction.BACK);
 
-// Iterate
-for (const item of buffer) {
-  console.log(item);
-}
+// Push to FRONT (oldest side)
+buf.push("Z", Direction.FRONT);
 
-// Resize
-buffer.resize(2000);
+console.log(buf.get(Direction.FRONT)); // "Z" (oldest)
+console.log(buf.get(Direction.BACK)); // "B" (newest)
+
+// Peek many
+console.log(buf.get(Direction.FRONT, 2)); // ["Z","A"] (oldest -> newer)
+console.log(buf.get(Direction.BACK, 2)); // ["B","A"] (newest -> older)
+
+// Iterate (oldest -> newest)
+for (const x of buf) console.log(x);
+
+// Pop
+console.log(buf.pop(Direction.FRONT)); // removes oldest ("Z")
+console.log(buf.pop(Direction.BACK)); // removes newest ("B")
+
+// Resize (logical capacity)
+buf.resize(10);
 
 // Clear
-buffer.clear();
+buf.clear();
 ```
 
-### BufferManager (High-level API)
+### 2) BufferManager (High-level API)
 
-```typescript
-import { BufferManager, Direction } from 'circular-queue-react';
+`BufferManager` wraps `CircularBuffer` and provides a friendly API:
 
-// Create a buffer manager
-const logBuffer = new BufferManager<LogEntry>(1000);
+- `pushHead` / `pushTail` (single item or array)
+- `popHead` / `popTail` (single or count)
+- `getHead` / `getTail` (single or count)
+- utilities: `getAll`, `replaceAll`, `forEach`/`map`/`filter`, `getInfo`, etc.
 
-// Add items
-logBuffer.push(logEntry);
-logBuffer.push(logEntry, Direction.FRONT);
+```ts
+import { BufferManager } from "circular-queue-react";
 
-// Add multiple items
-logBuffer.pushMany([log1, log2, log3]);
+const b = new BufferManager<string>(3);
 
-// Get all items
-const logs = logBuffer.getAll();
+// pushTail keeps newest at the end (BACK)
+b.pushTail(["A", "B", "C", "D"]);
+console.log(b.getAll()); // ["B","C","D"] (keeps last 3)
 
-// Get info
-const { data, totalCount } = logBuffer.getInfo();
+// pushHead inserts at FRONT, preserves input order
+b.pushHead(["X", "Y"]);
+console.log(b.getAll()); // ["X","Y","B"] (oldest -> newest)
 
-// Get first and last
-const { first, last } = logBuffer.getFirstAndLast();
+// Peek
+console.log(b.getHead()); // "X"
+console.log(b.getTail()); // "B"
+console.log(b.getHead(2)); // ["X","Y"] (oldest -> newer)
+console.log(b.getTail(2)); // ["B","Y"] (newest -> older)
 
-// Replace all
-logBuffer.replaceAll([newLog1, newLog2]);
+// Pop
+console.log(b.popHead()); // "X"
+console.log(b.popTail(2)); // ["B","Y"] (newest -> older)
+
+// Replace all (keeps last capacity if overflow)
+b.replaceAll(["1", "2", "3", "4"]);
+console.log(b.getAll()); // ["2","3","4"]
 ```
 
-### Factory Function
+### 3) Factory Function
 
-```typescript
-import { createBuffer } from 'circular-queue-react';
+```ts
+import { createBuffer } from "circular-queue-react";
 
-const buffer = createBuffer<number>(100);
-buffer.push(1);
-buffer.push(2);
+const buf = createBuffer<number>(3); // returns BufferManager<number>
+buf.pushTail([1, 2, 3, 4]); // keeps [2,3,4]
 ```
 
-### React Hook
+### 4) React Hook
 
-```typescript
-import { useCircularBuffer } from 'circular-queue-react';
+`useCircularBuffer` provides a BufferManager-backed stateful hook:
 
-function LogViewer() {
-  const {
-    data,           // Current buffer data (auto-updates on change)
-    push,           // Add item
-    pushMany,       // Add multiple items
-    clear,          // Clear all
-    size,           // Current size
-    isEmpty,        // Check if empty
-    isFull,         // Check if full
-    available       // Available space
-  } = useCircularBuffer<string>(100);
+- data auto-updates after mutations
+- `pushHead` / `pushTail` / `popHead` / `popTail` / `replaceAll` / `clear` / `resize`
 
-  const addLog = () => {
-    push(`Log at ${new Date().toISOString()}`);
-  };
+```tsx
+import { useCircularBuffer } from "circular-queue-react";
+
+export function LogViewer() {
+  const { data, pushTail, popHead, clear, size, capacity, available, isFull } =
+    useCircularBuffer<string>(100);
 
   return (
     <div>
-      <button onClick={addLog}>Add Log</button>
+      <button onClick={() => pushTail(`Log @ ${new Date().toISOString()}`)}>
+        Add Log
+      </button>
+      <button onClick={() => popHead()}>Pop Oldest</button>
       <button onClick={clear}>Clear</button>
-      <div>Logs: {size} / 100 (Available: {available})</div>
+
+      <div>
+        {size}/{capacity} (available: {available}) {isFull && "⚠️ FULL"}
+      </div>
 
       {data.map((log, i) => (
         <div key={i}>{log}</div>
@@ -132,141 +160,178 @@ function LogViewer() {
 }
 ```
 
-**Hook Options:**
+#### Hook options
 
-```typescript
-// With initial data
-const { data, push } = useCircularBuffer<number>(10, {
-  initialItems: [1, 2, 3, 4, 5]
+```ts
+const { data } = useCircularBuffer<number>(10, {
+  initialItems: [1, 2, 3, 4, 5],
 });
 ```
 
+---
+
+## Order Semantics (Important)
+
+This library uses consistent ordering rules:
+
+- **`getAll()`** always returns **oldest → newest**
+- **`getHead(n)`** returns **oldest → newer**
+- **`getTail(n)`** returns **newest → older**
+- **`popHead(n)`** removes/returns **oldest → newer**
+- **`popTail(n)`** removes/returns **newest → older**
+
+---
+
 ## API Reference
 
-### CircularBuffer<T>
+### Direction
+
+```ts
+Direction.FRONT; // head / oldest side
+Direction.BACK; // tail / newest side
+```
+
+### CircularBuffer`<T>`
 
 #### Constructor
-- `new CircularBuffer<T>(capacity: number)` - Create a new circular buffer
+
+- `new CircularBuffer<T>(capacity: number)`
 
 #### Methods
-- `push(item: T): void` - Add item to the end
-- `pushFront(item: T): void` - Add item to the front
-- `get(index: number): T | undefined` - Get item at index
-- `first(): T | undefined` - Get first (oldest) item
-- `last(): T | undefined` - Get last (newest) item
-- `toArray(): T[]` - Convert to array
-- `forEach(callback: (item: T, index: number) => void): void` - Iterate
-- `map<U>(callback: (item: T, index: number) => U): U[]` - Map items
-- `filter(predicate: (item: T, index: number) => boolean): T[]` - Filter items
-- `resize(newCapacity: number): void` - Resize buffer
-- `clear(): void` - Clear all items
-- `length(): number` - Get current size
-- `getCapacity(): number` - Get max capacity
-- `isEmpty(): boolean` - Check if empty
-- `isFull(): boolean` - Check if full
-- `available(): number` - Get available space
 
-### BufferManager<T>
+- `push(item: T, direction: Direction): void`
+- `pop(direction: Direction): T | undefined`
+- `get(direction: Direction): T | undefined`
+- `get(direction: Direction, count: number): T[]`
+- FRONT count: oldest → newer
+- BACK count: newest → older
 
-Implements `IBuffer<T>` interface with all CircularBuffer methods plus:
+- `clear(): void`
+- `resize(newCapacity: number): void` (logical capacity)
+- `getSize(): number`
+- `getCapacity(): number` (physical storage)
+- `getLogicalCapacity(): number`
+- `[Symbol.iterator](): Iterator<T>` (oldest → newest)
 
-- `pushMany(items: T[], direction?: Direction): void` - Add multiple items
-- `getAll(): T[]` - Get all items as array
-- `getInfo(): { data: T[]; totalCount: number }` - Get buffer info
-- `getFirstAndLast(): { first: T | undefined; last: T | undefined }` - Get edges
-- `replaceAll(items: T[]): void` - Replace all items
-- `size(): number` - Get current size
-- `capacity(): number` - Get max capacity
+### BufferManager`<T>`
 
-### Direction Enum
+High-level managed buffer built on top of CircularBuffer.
 
-```typescript
-Direction.FRONT // Add to front
-Direction.BACK  // Add to back (default)
-```
+#### Add (Push)
+
+- `pushHead(item: T): void`
+- `pushHead(items: readonly T[]): void`
+- `pushTail(item: T): void`
+- `pushTail(items: readonly T[]): void`
+
+#### Remove (Pop)
+
+- `popHead(): T | undefined`
+- `popHead(count: number): T[]` (oldest → newer)
+- `popTail(): T | undefined`
+- `popTail(count: number): T[]` (newest → older)
+
+#### Peek (Read Without Removing)
+
+- `getHead(): T | undefined`
+- `getHead(count: number): T[]` (oldest → newer)
+- `getTail(): T | undefined`
+- `getTail(count: number): T[]` (newest → older)
+- `getAll(): T[]` (oldest → newest)
+
+#### Maintenance / Status
+
+- `clear(): void`
+- `resize(newCapacity: number): void`
+- `replaceAll(items: readonly T[]): void`
+- `size(): number`
+- `capacity(): number`
+- `isEmpty(): boolean`
+- `isFull(): boolean`
+- `available(): number`
+
+#### Utilities
+
+- `getFirstAndLast(): { first: T | undefined; last: T | undefined }`
+- `getInfo(): { data: T[]; totalCount: number }`
+- `forEach(cb): void`
+- `map(cb): U[]`
+- `filter(cb): T[]`
+- `Iterable` (oldest → newest)
 
 ### useCircularBuffer Hook
 
-React hook for managing circular buffers with automatic re-rendering.
-
-```typescript
+```ts
 function useCircularBuffer<T>(
   capacity: number,
-  options?: UseCircularBufferOptions
-): UseCircularBufferReturn<T>
+  options?: { initialItems?: readonly T[] }
+): {
+  data: T[];
+
+  pushHead: (input: T | readonly T[]) => void;
+  pushTail: (input: T | readonly T[]) => void;
+
+  popHead: { (): T | undefined; (count: number): T[] };
+  popTail: { (): T | undefined; (count: number): T[] };
+
+  getHead: () => T | undefined;
+  getTail: () => T | undefined;
+
+  clear: () => void;
+  replaceAll: (items: readonly T[]) => void;
+  resize: (newCapacity: number) => void;
+
+  size: number;
+  capacity: number;
+  isEmpty: boolean;
+  isFull: boolean;
+  available: number;
+
+  getFirstAndLast: () => { first: T | undefined; last: T | undefined };
+
+  // advanced:
+  manager: BufferManager<T>;
+};
 ```
 
-**Returns:**
-- `data: T[]` - Current buffer contents (triggers re-render on change)
-- `push: (item: T, direction?: Direction) => void` - Add item
-- `pushMany: (items: T[], direction?: Direction) => void` - Add multiple items
-- `get: (index: number) => T | undefined` - Get item at index
-- `clear: () => void` - Clear all items
-- `replaceAll: (items: T[]) => void` - Replace all items
-- `resize: (newCapacity: number) => void` - Resize buffer
-- `size: number` - Current number of items
-- `capacity: number` - Maximum capacity
-- `isEmpty: boolean` - Whether buffer is empty
-- `isFull: boolean` - Whether buffer is full
-- `available: number` - Available space
-- `getFirstAndLast: () => { first: T | undefined; last: T | undefined }` - Get edges
-
-**Options:**
-- `initialItems?: T[]` - Items to populate the buffer initially
+---
 
 ## Use Cases
 
-### 1. React Log Viewer (with Hook)
+### 1) React Real-time Log Viewer
 
-```typescript
-import { useCircularBuffer, Direction } from 'circular-queue-react';
+```tsx
+import { useCircularBuffer } from "circular-queue-react";
 
 type LogEntry = {
-  timestamp: number;
-  level: 'info' | 'warn' | 'error';
+  ts: number;
+  level: "info" | "warn" | "error";
   message: string;
 };
 
-function LogViewer() {
-  const { data, push, clear, size, isFull } = useCircularBuffer<LogEntry>(1000);
+export function LogViewer() {
+  const { data, pushTail, clear, size, isFull } =
+    useCircularBuffer<LogEntry>(1000);
 
-  const addLog = (level: LogEntry['level'], message: string) => {
-    push({
-      timestamp: Date.now(),
-      level,
-      message
-    });
-  };
+  const add = (level: LogEntry["level"], message: string) =>
+    pushTail({ ts: Date.now(), level, message });
 
-  // Filter by level
-  const errors = data.filter(log => log.level === 'error');
+  const errors = data.filter((x) => x.level === "error");
 
   return (
     <div>
-      <h2>System Logs ({size}/1000) {isFull && '⚠️ FULL'}</h2>
+      <h2>
+        Logs ({size}/1000) {isFull && "⚠️ FULL"}
+      </h2>
 
-      <div>
-        <button onClick={() => addLog('info', 'Test info')}>Add Info</button>
-        <button onClick={() => addLog('error', 'Test error')}>Add Error</button>
-        <button onClick={clear}>Clear All</button>
-      </div>
+      <button onClick={() => add("info", "hello")}>Add</button>
+      <button onClick={() => add("error", "oops")}>Add Error</button>
+      <button onClick={clear}>Clear</button>
 
-      <div>
-        <h3>Errors: {errors.length}</h3>
-        {errors.map((log, i) => (
-          <div key={i} style={{ color: 'red' }}>
-            {new Date(log.timestamp).toISOString()}: {log.message}
-          </div>
-        ))}
-      </div>
-
-      <h3>All Logs:</h3>
-      {data.map((log, i) => (
-        <div key={i} style={{
-          color: log.level === 'error' ? 'red' :
-                 log.level === 'warn' ? 'orange' : 'black'
-        }}>
-          [{log.level.toUpperCase()}] {log.message}
+      <h3>Errors: {errors.length}</h3>
+      {data.map((x, i) => (
+        <div key={i}>
+          [{x.level}] {x.message}
         </div>
       ))}
     </div>
@@ -274,365 +339,38 @@ function LogViewer() {
 }
 ```
 
-### 2. Log Viewer (Vanilla JS)
+### 2) Rolling Window Average (Vanilla TS)
 
-```typescript
-import { createBuffer } from 'circular-queue-react';
+```ts
+import { BufferManager } from "circular-queue-react";
 
-type LogEntry = {
-  timestamp: number;
-  level: 'info' | 'warn' | 'error';
-  message: string;
-};
+class RollingAverage {
+  private buf = new BufferManager<number>(5);
 
-// Keep last 10,000 log entries
-const logBuffer = createBuffer<LogEntry>(10000);
-
-// Add logs as they come in
-function addLog(log: LogEntry) {
-  logBuffer.push(log);
-}
-
-// Display recent logs
-function getRecentLogs(count: number): LogEntry[] {
-  const all = logBuffer.getAll();
-  return all.slice(-count);
-}
-
-// Search logs
-function searchLogs(query: string): LogEntry[] {
-  return logBuffer.filter(log =>
-    log.message.toLowerCase().includes(query.toLowerCase())
-  );
-}
-```
-
-### 3. React Real-time Chart (with Hook)
-
-```typescript
-import { useCircularBuffer } from 'circular-queue-react';
-import { LineChart, Line } from 'recharts';
-
-function SensorChart() {
-  const { data, push } = useCircularBuffer<number>(50);
-
-  // Simulate sensor reading
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const reading = Math.random() * 100;
-      push(reading);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [push]);
-
-  const chartData = data.map((value, index) => ({
-    time: index,
-    value
-  }));
-
-  const average = data.reduce((a, b) => a + b, 0) / data.length || 0;
-
-  return (
-    <div>
-      <h2>Sensor Monitor</h2>
-      <p>Average: {average.toFixed(2)}</p>
-      <LineChart width={600} height={300} data={chartData}>
-        <Line type="monotone" dataKey="value" stroke="#8884d8" />
-      </LineChart>
-    </div>
-  );
-}
-```
-
-### 4. Streaming Data (Vanilla JS)
-
-```typescript
-import { CircularBuffer } from 'circular-queue-react';
-
-// Rolling window of sensor readings
-const sensorBuffer = new CircularBuffer<number>(100);
-
-function addReading(value: number) {
-  sensorBuffer.push(value);
-}
-
-function getAverage(): number {
-  const readings = sensorBuffer.toArray();
-  const sum = readings.reduce((a, b) => a + b, 0);
-  return sum / readings.length;
-}
-
-function getMax(): number {
-  return Math.max(...sensorBuffer.toArray());
-}
-```
-
-### 5. Undo/Redo System
-
-```typescript
-import { CircularBuffer } from 'circular-queue-react';
-
-type Action = {
-  type: string;
-  undo: () => void;
-  redo: () => void;
-};
-
-class UndoManager {
-  private undoBuffer = new CircularBuffer<Action>(50);
-  private redoBuffer = new CircularBuffer<Action>(50);
-
-  do(action: Action) {
-    action.redo();
-    this.undoBuffer.push(action);
-    this.redoBuffer.clear();
+  add(v: number) {
+    this.buf.pushTail(v);
   }
 
-  undo() {
-    const action = this.undoBuffer.last();
-    if (action) {
-      action.undo();
-      this.redoBuffer.push(action);
-    }
-  }
-
-  redo() {
-    const action = this.redoBuffer.last();
-    if (action) {
-      action.redo();
-      this.undoBuffer.push(action);
-    }
+  avg() {
+    const a = this.buf.getAll();
+    return a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
   }
 }
 ```
 
-### 6. Rate Limiting / Request Queue
-
-```typescript
-import { CircularBuffer } from 'circular-queue-react';
-
-class RateLimiter {
-  private requestTimes = new CircularBuffer<number>(100);
-  private maxRequests = 100;
-  private windowMs = 60000; // 1 minute
-
-  canMakeRequest(): boolean {
-    const now = Date.now();
-    const cutoff = now - this.windowMs;
-
-    // Count requests in current window
-    const recentRequests = this.requestTimes.filter(
-      time => time > cutoff
-    );
-
-    return recentRequests.length < this.maxRequests;
-  }
-
-  recordRequest() {
-    this.requestTimes.push(Date.now());
-  }
-}
-```
-
-### 7. Cache with LRU-like Behavior
-
-```typescript
-import { CircularBuffer } from 'circular-queue-react';
-
-type CacheEntry<T> = {
-  key: string;
-  value: T;
-  timestamp: number;
-};
-
-class SimpleCache<T> {
-  private buffer = new CircularBuffer<CacheEntry<T>>(1000);
-
-  set(key: string, value: T) {
-    this.buffer.push({
-      key,
-      value,
-      timestamp: Date.now(),
-    });
-  }
-
-  get(key: string): T | undefined {
-    // Get most recent entry for key
-    const entries = this.buffer.filter(e => e.key === key);
-    return entries[entries.length - 1]?.value;
-  }
-
-  clear() {
-    this.buffer.clear();
-  }
-}
-```
+---
 
 ## Performance
 
-All operations are highly optimized:
+| Operation                       | Complexity |
+| ------------------------------- | ---------- |
+| **push / pop / get (peek)**     | **O(1)**   |
+| **get(count)**                  | **O(k)**   |
+| **getAll / iteration snapshot** | **O(n)**   |
+| **resize**                      | **O(n)**   |
+| **clear**                       | **O(1)**   |
 
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| push      | O(1)           | O(1)             |
-| pushFront | O(1)           | O(1)             |
-| get       | O(1)           | O(1)             |
-| first/last| O(1)           | O(1)             |
-| toArray   | O(n)           | O(n)             |
-| resize    | O(n)           | O(n)             |
-| clear     | O(1)           | O(1)             |
-
-## Comparison with Alternatives
-
-### vs. Array
-
-**CircularBuffer advantages:**
-- ✅ Fixed memory usage (no unbounded growth)
-- ✅ O(1) push operations (Array.shift() is O(n))
-- ✅ Automatic overflow handling
-
-**Array advantages:**
-- ✅ Built-in, no dependency
-- ✅ More flexible size
-
-### vs. Linked List
-
-**CircularBuffer advantages:**
-- ✅ Better cache locality (contiguous memory)
-- ✅ Lower memory overhead (no node pointers)
-- ✅ O(1) random access
-
-**Linked List advantages:**
-- ✅ O(1) insertion/deletion anywhere
-- ✅ No fixed capacity
-
-## TypeScript Tips
-
-### Type Inference
-
-```typescript
-// Type is inferred
-const buffer = new CircularBuffer(100);
-buffer.push(42);        // OK
-buffer.push('string');  // OK (any type)
-
-// Explicit type for safety
-const typedBuffer = new CircularBuffer<number>(100);
-typedBuffer.push(42);        // OK
-typedBuffer.push('string');  // Error!
-```
-
-### Interface Types
-
-```typescript
-interface LogEntry {
-  timestamp: number;
-  message: string;
-}
-
-const logs = createBuffer<LogEntry>(1000);
-```
-
-### Readonly Buffer
-
-```typescript
-function getReadonlyView<T>(buffer: CircularBuffer<T>): readonly T[] {
-  return buffer.toArray();
-}
-```
-
-## React Integration
-
-### Installation for React Projects
-
-```bash
-npm install circular-queue-react react
-# React is a peer dependency (optional)
-```
-
-### When to Use the Hook
-
-Use `useCircularBuffer` when you need:
-- ✅ Automatic re-rendering when buffer changes
-- ✅ React state integration
-- ✅ Component lifecycle management
-
-Use `CircularBuffer` or `BufferManager` directly when:
-- ✅ You don't need automatic re-rendering
-- ✅ You're not using React
-- ✅ You want manual control over updates
-
-### Example: Chat Message History
-
-```typescript
-import { useCircularBuffer } from 'circular-queue-react';
-
-interface Message {
-  id: string;
-  user: string;
-  text: string;
-  timestamp: number;
-}
-
-function ChatWindow() {
-  const { data: messages, push, size } = useCircularBuffer<Message>(100);
-  const [input, setInput] = useState('');
-
-  const sendMessage = () => {
-    if (input.trim()) {
-      push({
-        id: crypto.randomUUID(),
-        user: 'You',
-        text: input,
-        timestamp: Date.now()
-      });
-      setInput('');
-    }
-  };
-
-  return (
-    <div>
-      <div className="messages">
-        {messages.map(msg => (
-          <div key={msg.id}>
-            <strong>{msg.user}:</strong> {msg.text}
-          </div>
-        ))}
-      </div>
-
-      <input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyPress={e => e.key === 'Enter' && sendMessage()}
-      />
-      <button onClick={sendMessage}>Send</button>
-      <small>{size} / 100 messages</small>
-    </div>
-  );
-}
-```
-
-## Migration from Original Code
-
-If you're migrating from the original `ResizableCircularBuffer` or `TableBuffer`:
-
-```typescript
-// Old code
-import { ResizableCircularBuffer } from '../services/buffer/circularBuffer';
-import { createBuffer } from '../services/buffer/tableBuffer';
-
-// New code
-import { CircularBuffer, createBuffer } from 'circular-queue-react';
-
-// API is mostly compatible!
-const buffer = new CircularBuffer<LogEntry>(1000); // was ResizableCircularBuffer
-const managed = createBuffer<LogEntry>(1000);      // same factory function
-
-// Minor changes:
-// - pushfront() → pushFront() (camelCase)
-// - Direction constants now in Direction enum
-```
+---
 
 ## License
 
@@ -640,4 +378,10 @@ MIT
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+PRs are welcome!
+
+If you find a bug or want a feature, please open an issue.
+
+```
+
+```
