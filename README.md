@@ -202,9 +202,7 @@ Direction.BACK; // tail / newest side
 - `push(item: T, direction: Direction): void`
 - `pop(direction: Direction): T | undefined`
 - `get(direction: Direction): T | undefined`
-- `get(direction: Direction, count: number): T[]`
-- FRONT count: oldest → newer
-- BACK count: newest → older
+- `get(direction: Direction, count: number): T[]` FRONT count: oldest → newer, BACK count: newest → older
 
 - `clear(): void`
 - `resize(newCapacity: number): void` (logical capacity)
@@ -381,7 +379,3 @@ MIT
 PRs are welcome!
 
 If you find a bug or want a feature, please open an issue.
-
-```
-
-```
