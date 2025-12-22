@@ -1,14 +1,14 @@
 /**
  * Direction for buffer operations.
  *
- * - FRONT: head / oldest side
- * - BACK: tail / newest side
+ * - HEAD: head / oldest side
+ * - TAIL: tail / newest side
  */
 export const Direction = {
-  /** Front side (head / oldest) */
-  FRONT: "front",
-  /** Back side (tail / newest) */
-  BACK: "back",
+  /** HEAD side (head / oldest) */
+  HEAD: "head",
+  /** TAIL side (tail / newest) */
+  TAIL: "tail",
 } as const;
 
 export type Direction = (typeof Direction)[keyof typeof Direction];
@@ -32,12 +32,12 @@ export interface IBuffer<T> {
   // ============================================================================
 
   /**
-   * Add one item to the head (FRONT / oldest side).
+   * Add one item to the head (HEAD / oldest side).
    */
   pushHead(item: T): void;
 
   /**
-   * Add multiple items to the head (FRONT / oldest side).
+   * Add multiple items to the head (HEAD / oldest side).
    *
    * Implementations should preserve original order:
    * `pushHead([a,b,c])` => `a` becomes oldest among inserted items.
@@ -45,12 +45,12 @@ export interface IBuffer<T> {
   pushHead(items: readonly T[]): void;
 
   /**
-   * Add one item to the tail (BACK / newest side).
+   * Add one item to the tail (TAIL / newest side).
    */
   pushTail(item: T): void;
 
   /**
-   * Add multiple items to the tail (BACK / newest side).
+   * Add multiple items to the tail (TAIL / newest side).
    */
   pushTail(items: readonly T[]): void;
 

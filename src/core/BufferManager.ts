@@ -6,7 +6,7 @@ import { Direction, type IBuffer } from "../types";
  *
  * Provides:
  * - Convenient APIs for pushing/popping single items or arrays
- * - Direction-specific helpers (head/front vs tail/back)
+ * - Direction-specific helpers (head/HEAD vs tail/TAIL)
  * - Iterable utilities (forEach/map/filter)
  *
  * Great for:
@@ -33,7 +33,7 @@ export class BufferManager<T> implements IBuffer<T> {
   // ============================================================================
 
   /**
-   * Push item(s) to the head (FRONT / oldest side).
+   * Push item(s) to the head (HEAD / oldest side).
    *
    * When pushing an array, the original order is preserved:
    * `pushHead([a,b,c])` results in `a` being the oldest among the inserted items.
@@ -45,7 +45,7 @@ export class BufferManager<T> implements IBuffer<T> {
   pushHead(input: readonly T[]): void;
   pushHead(input: T | readonly T[]): void {
     if (!this.isMany(input)) {
-      this.buffer.push(input, Direction.FRONT);
+      this.buffer.push(input, Direction.HEAD);
       return;
     }
 
@@ -54,12 +54,12 @@ export class BufferManager<T> implements IBuffer<T> {
       input.length > capacity ? input.slice(0, capacity) : input;
 
     for (let i = itemsToAdd.length - 1; i >= 0; i--) {
-      this.buffer.push(itemsToAdd[i], Direction.FRONT);
+      this.buffer.push(itemsToAdd[i], Direction.HEAD);
     }
   }
 
   /**
-   * Push item(s) to the tail (BACK / newest side).
+   * Push item(s) to the tail (TAIL / newest side).
    *
    * Optimization:
    * - If input array length exceeds logical capacity, only the last `capacity` items are processed.
@@ -68,7 +68,7 @@ export class BufferManager<T> implements IBuffer<T> {
   pushTail(input: readonly T[]): void;
   pushTail(input: T | readonly T[]): void {
     if (!this.isMany(input)) {
-      this.buffer.push(input, Direction.BACK);
+      this.buffer.push(input, Direction.TAIL);
       return;
     }
 
@@ -76,7 +76,7 @@ export class BufferManager<T> implements IBuffer<T> {
     const itemsToAdd = input.length > capacity ? input.slice(-capacity) : input;
 
     for (const item of itemsToAdd) {
-      this.buffer.push(item, Direction.BACK);
+      this.buffer.push(item, Direction.TAIL);
     }
   }
 
@@ -94,7 +94,7 @@ export class BufferManager<T> implements IBuffer<T> {
   popHead(count: number): T[];
   popHead(count?: number): T | undefined | T[] {
     if (count === undefined) {
-      return this.buffer.pop(Direction.FRONT);
+      return this.buffer.pop(Direction.HEAD);
     }
 
     const n = Math.min(Math.max(0, Math.floor(count)), this.size());
@@ -103,7 +103,7 @@ export class BufferManager<T> implements IBuffer<T> {
     const result = new Array<T>(n);
     for (let i = 0; i < n; i++) {
       // safe because n <= size()
-      result[i] = this.buffer.pop(Direction.FRONT) as T;
+      result[i] = this.buffer.pop(Direction.HEAD) as T;
     }
     return result;
   }
@@ -118,7 +118,7 @@ export class BufferManager<T> implements IBuffer<T> {
   popTail(count: number): T[];
   popTail(count?: number): T | undefined | T[] {
     if (count === undefined) {
-      return this.buffer.pop(Direction.BACK);
+      return this.buffer.pop(Direction.TAIL);
     }
 
     const n = Math.min(Math.max(0, Math.floor(count)), this.size());
@@ -126,7 +126,7 @@ export class BufferManager<T> implements IBuffer<T> {
 
     const result = new Array<T>(n);
     for (let i = 0; i < n; i++) {
-      result[i] = this.buffer.pop(Direction.BACK) as T;
+      result[i] = this.buffer.pop(Direction.TAIL) as T;
     }
     return result;
   }
@@ -145,8 +145,8 @@ export class BufferManager<T> implements IBuffer<T> {
   getHead(count: number): T[];
   getHead(count?: number): T | undefined | T[] {
     return count === undefined
-      ? this.buffer.get(Direction.FRONT)
-      : this.buffer.get(Direction.FRONT, count);
+      ? this.buffer.get(Direction.HEAD)
+      : this.buffer.get(Direction.HEAD, count);
   }
 
   /**
@@ -159,8 +159,8 @@ export class BufferManager<T> implements IBuffer<T> {
   getTail(count: number): T[];
   getTail(count?: number): T | undefined | T[] {
     return count === undefined
-      ? this.buffer.get(Direction.BACK)
-      : this.buffer.get(Direction.BACK, count);
+      ? this.buffer.get(Direction.TAIL)
+      : this.buffer.get(Direction.TAIL, count);
   }
 
   /**

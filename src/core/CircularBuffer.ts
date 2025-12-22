@@ -8,8 +8,8 @@ import { Direction } from "../types";
  * - `get()` is a non-destructive "peek" operation (does not remove items).
  *
  * Invariants:
- * - `head` points to the oldest element (FRONT).
- * - `tail` points to the next write position for BACK.
+ * - `head` points to the oldest element (HEAD).
+ * - `tail` points to the next write position for TAIL.
  *
  * @template T - Element type stored in the buffer
  */
@@ -41,27 +41,27 @@ export class CircularBuffer<T> {
    * Push a value into the buffer.
    *
    * If the buffer is full, it overwrites the oldest items depending on direction.
-   * - FRONT: inserts before the current head (becomes the new oldest).
-   * - BACK: inserts at the tail (becomes the newest).
+   * - HEAD: inserts before the current head (becomes the new oldest).
+   * - TAIL: inserts at the tail (becomes the newest).
    *
    * @param item - Value to store
-   * @param direction - Direction.FRONT (head) or Direction.BACK (tail)
+   * @param direction - Direction.HEAD (head) or Direction.TAIL (tail)
    */
   push(item: T, direction: Direction): void {
-    if (direction === Direction.FRONT) {
+    if (direction === Direction.HEAD) {
       this.head = (this.head - 1 + this.capacity) % this.capacity;
       this.buffer[this.head] = item;
 
       if (this.size < this.logicalCapacity) {
         this.size++;
       } else {
-        // Overwrite requires moving tail backward to keep size bounded
+        // Overwrite requires moving tail TAILward to keep size bounded
         this.tail = (this.tail - 1 + this.capacity) % this.capacity;
       }
       return;
     }
 
-    if (direction === Direction.BACK) {
+    if (direction === Direction.TAIL) {
       this.buffer[this.tail] = item;
       this.tail = (this.tail + 1) % this.capacity;
 
@@ -81,16 +81,16 @@ export class CircularBuffer<T> {
   /**
    * Pop (remove and return) a single value from the buffer.
    *
-   * - FRONT: removes the oldest item.
-   * - BACK: removes the newest item.
+   * - HEAD: removes the oldest item.
+   * - TAIL: removes the newest item.
    *
-   * @param direction - Direction.FRONT (oldest) or Direction.BACK (newest)
+   * @param direction - Direction.HEAD (oldest) or Direction.TAIL (newest)
    * @returns The removed item, or undefined if empty
    */
   pop(direction: Direction): T | undefined {
     if (this.size === 0) return undefined;
 
-    if (direction === Direction.FRONT) {
+    if (direction === Direction.HEAD) {
       const item = this.buffer[this.head] as T;
       this.buffer[this.head] = undefined;
 
@@ -104,7 +104,7 @@ export class CircularBuffer<T> {
       return item;
     }
 
-    if (direction === Direction.BACK) {
+    if (direction === Direction.TAIL) {
       const lastIndex = (this.tail - 1 + this.capacity) % this.capacity;
       const item = this.buffer[lastIndex] as T;
       this.buffer[lastIndex] = undefined;
@@ -125,10 +125,10 @@ export class CircularBuffer<T> {
   /**
    * Peek item(s) without removing them.
    *
-   * - FRONT: returns from oldest -> newer
-   * - BACK: returns from newest -> older
+   * - HEAD: returns from oldest -> newer
+   * - TAIL: returns from newest -> older
    *
-   * @param direction - Direction.FRONT or Direction.BACK
+   * @param direction - Direction.HEAD or Direction.TAIL
    * @returns A single item if `count` is omitted; otherwise an array
    */
   get(direction: Direction): T | undefined;
@@ -140,10 +140,10 @@ export class CircularBuffer<T> {
 
     // single
     if (count === undefined) {
-      if (direction === Direction.FRONT) {
+      if (direction === Direction.HEAD) {
         return this.buffer[this.head] as T;
       }
-      if (direction === Direction.BACK) {
+      if (direction === Direction.TAIL) {
         const lastIndex = (this.tail - 1 + this.capacity) % this.capacity;
         return this.buffer[lastIndex] as T;
       }
@@ -156,7 +156,7 @@ export class CircularBuffer<T> {
 
     const result = new Array<T>(n);
 
-    if (direction === Direction.FRONT) {
+    if (direction === Direction.HEAD) {
       for (let i = 0; i < n; i++) {
         const idx = (this.head + i) % this.capacity;
         result[i] = this.buffer[idx] as T;
@@ -164,7 +164,7 @@ export class CircularBuffer<T> {
       return result;
     }
 
-    if (direction === Direction.BACK) {
+    if (direction === Direction.TAIL) {
       let idx = (this.tail - 1 + this.capacity) % this.capacity;
       for (let i = 0; i < n; i++) {
         result[i] = this.buffer[idx] as T;

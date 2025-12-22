@@ -23,52 +23,52 @@ type LogEntry = {
 
 const logBuffer = new CircularBuffer<LogEntry>(5); // Small capacity for demo
 
-// Add some logs using push with Direction.BACK (newest side)
+// Add some logs using push with Direction.TAIL (newest side)
 logBuffer.push(
   { timestamp: Date.now(), level: "info", message: "Application started" },
-  Direction.BACK
+  Direction.TAIL
 );
 logBuffer.push(
   { timestamp: Date.now(), level: "info", message: "Loading configuration" },
-  Direction.BACK
+  Direction.TAIL
 );
 logBuffer.push(
   { timestamp: Date.now(), level: "warn", message: "Cache is full" },
-  Direction.BACK
+  Direction.TAIL
 );
 logBuffer.push(
   { timestamp: Date.now(), level: "error", message: "Connection failed" },
-  Direction.BACK
+  Direction.TAIL
 );
 
 console.log("Total logs:", logBuffer.getSize());
-console.log("Oldest (FRONT):", logBuffer.get(Direction.FRONT));
-console.log("Newest (BACK):", logBuffer.get(Direction.BACK));
+console.log("Oldest (HEAD):", logBuffer.get(Direction.HEAD));
+console.log("Newest (TAIL):", logBuffer.get(Direction.TAIL));
 
 // Peek multiple without removing
 console.log(
-  "Peek newest 2 (BACK, newest->older):",
-  logBuffer.get(Direction.BACK, 2)
+  "Peek newest 2 (TAIL, newest->older):",
+  logBuffer.get(Direction.TAIL, 2)
 );
 
 // Add more logs (will overflow)
 logBuffer.push(
   { timestamp: Date.now(), level: "info", message: "Retrying connection" },
-  Direction.BACK
+  Direction.TAIL
 );
 logBuffer.push(
   { timestamp: Date.now(), level: "info", message: "Connection successful" },
-  Direction.BACK
+  Direction.TAIL
 );
 
 console.log("\nAfter overflow:");
 console.log("Total logs (still 5):", logBuffer.getSize());
-console.log("Oldest (FRONT):", logBuffer.get(Direction.FRONT));
+console.log("Oldest (HEAD):", logBuffer.get(Direction.HEAD));
 console.log("All logs (oldest->newest):", Array.from(logBuffer));
 
 // Remove one item using pop
-const removed = logBuffer.pop(Direction.FRONT);
-console.log("\nRemoved from FRONT:", removed);
+const removed = logBuffer.pop(Direction.HEAD);
+console.log("\nRemoved from HEAD:", removed);
 console.log("Size after pop:", logBuffer.getSize());
 
 // ============================================================================
@@ -80,14 +80,14 @@ console.log("==========================================");
 
 const messageBuffer = new BufferManager<string>(10);
 
-// Add to tail (BACK)
+// Add to tail (TAIL)
 messageBuffer.pushTail("Message 1");
 messageBuffer.pushTail("Message 2");
 messageBuffer.pushTail("Message 3");
 
 console.log("Messages:", messageBuffer.getAll());
 
-// Add to head (FRONT)
+// Add to head (HEAD)
 messageBuffer.pushHead("Priority Message!");
 console.log("After adding to head:", messageBuffer.getAll());
 

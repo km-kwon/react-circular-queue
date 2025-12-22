@@ -7,7 +7,7 @@ Zero dependencies (**React optional**) — perfect for logs, streaming data, rol
 
 ## Features
 
-- 🔄 **CircularBuffer (Low-level)** — direction-based circular buffer primitive (FRONT/BACK)
+- 🔄 **CircularBuffer (Low-level)** — direction-based circular buffer primitive (HEAD/TAIL)
 - 📦 **BufferManager (High-level)** — convenient API (push/pop single or arrays, peek helpers, utilities)
 - ⚛️ **React Hook** — `useCircularBuffer` for automatic re-rendering in React
 - 🎯 **Type-Safe** — full TypeScript generics support
@@ -48,26 +48,26 @@ import { CircularBuffer, Direction } from "circular-queue-react";
 
 const buf = new CircularBuffer<string>(3);
 
-// Push to BACK (newest side)
-buf.push("A", Direction.BACK);
-buf.push("B", Direction.BACK);
+// Push to TAIL (newest side)
+buf.push("A", Direction.TAIL);
+buf.push("B", Direction.TAIL);
 
-// Push to FRONT (oldest side)
-buf.push("Z", Direction.FRONT);
+// Push to HEAD (oldest side)
+buf.push("Z", Direction.HEAD);
 
-console.log(buf.get(Direction.FRONT)); // "Z" (oldest)
-console.log(buf.get(Direction.BACK)); // "B" (newest)
+console.log(buf.get(Direction.HEAD)); // "Z" (oldest)
+console.log(buf.get(Direction.TAIL)); // "B" (newest)
 
 // Peek many
-console.log(buf.get(Direction.FRONT, 2)); // ["Z","A"] (oldest -> newer)
-console.log(buf.get(Direction.BACK, 2)); // ["B","A"] (newest -> older)
+console.log(buf.get(Direction.HEAD, 2)); // ["Z","A"] (oldest -> newer)
+console.log(buf.get(Direction.TAIL, 2)); // ["B","A"] (newest -> older)
 
 // Iterate (oldest -> newest)
 for (const x of buf) console.log(x);
 
 // Pop
-console.log(buf.pop(Direction.FRONT)); // removes oldest ("Z")
-console.log(buf.pop(Direction.BACK)); // removes newest ("B")
+console.log(buf.pop(Direction.HEAD)); // removes oldest ("Z")
+console.log(buf.pop(Direction.TAIL)); // removes newest ("B")
 
 // Resize (logical capacity)
 buf.resize(10);
@@ -90,11 +90,11 @@ import { BufferManager } from "circular-queue-react";
 
 const b = new BufferManager<string>(3);
 
-// pushTail keeps newest at the end (BACK)
+// pushTail keeps newest at the end (TAIL)
 b.pushTail(["A", "B", "C", "D"]);
 console.log(b.getAll()); // ["B","C","D"] (keeps last 3)
 
-// pushHead inserts at FRONT, preserves input order
+// pushHead inserts at HEAD, preserves input order
 b.pushHead(["X", "Y"]);
 console.log(b.getAll()); // ["X","Y","B"] (oldest -> newest)
 
@@ -124,7 +124,7 @@ buf.pushTail([1, 2, 3, 4]); // keeps [2,3,4]
 
 ### 4) React Hook
 
-`useCircularBuffer` provides a BufferManager-backed stateful hook:
+`useCircularBuffer` provides a BufferManager-TAILed stateful hook:
 
 - data auto-updates after mutations
 - `pushHead` / `pushTail` / `popHead` / `popTail` / `replaceAll` / `clear` / `resize`
@@ -178,13 +178,72 @@ This library uses consistent ordering rules:
 
 ---
 
+## Important Type Limitation
+
+**⚠️ When `T` itself is an array type, the array overload for `pushHead`/`pushTail` cannot be used.**
+
+### Why?
+
+TypeScript cannot distinguish between:
+- `T` (when `T = number[]`)
+- `readonly T[]` (which would be `readonly number[][]`)
+
+Both resolve to array types, making overload resolution ambiguous.
+
+### Example
+
+```ts
+// ❌ PROBLEMATIC: T = number[]
+const buf = new BufferManager<number[]>(5);
+
+// This will fail! TypeScript cannot tell if you mean:
+// 1. Push a single item (which happens to be an array): number[]
+// 2. Push multiple items: readonly number[][]
+buf.pushTail([[1, 2], [3, 4]]);
+
+// ✅ SOLUTION: Push one item at a time
+buf.pushTail([1, 2]);     // Push single array
+buf.pushTail([3, 4]);     // Push another single array
+```
+
+### Workaround
+
+When `T` is an array type, **always push items one at a time** instead of using the array overload:
+
+```ts
+const items: number[][] = [[1, 2], [3, 4], [5, 6]];
+
+// ❌ Don't do this:
+// buf.pushTail(items);
+
+// ✅ Do this instead:
+for (const item of items) {
+  buf.pushTail(item);
+}
+
+// Or use a wrapper type:
+type Item = { data: number[] };
+const typedBuf = new BufferManager<Item>(5);
+typedBuf.pushTail([
+  { data: [1, 2] },
+  { data: [3, 4] }
+]); // ✅ Works!
+```
+
+This limitation applies to:
+- `BufferManager.pushHead()`
+- `BufferManager.pushTail()`
+- `useCircularBuffer` hook's `pushHead` and `pushTail`
+
+---
+
 ## API Reference
 
 ### Direction
 
 ```ts
-Direction.FRONT; // head / oldest side
-Direction.BACK; // tail / newest side
+Direction.HEAD; // head / oldest side
+Direction.TAIL; // tail / newest side
 ```
 
 ### CircularBuffer`<T>`
@@ -198,7 +257,7 @@ Direction.BACK; // tail / newest side
 - `push(item: T, direction: Direction): void`
 - `pop(direction: Direction): T | undefined`
 - `get(direction: Direction): T | undefined`
-- `get(direction: Direction, count: number): T[]` FRONT count: oldest → newer, BACK count: newest → older
+- `get(direction: Direction, count: number): T[]` HEAD count: oldest → newer, TAIL count: newest → older
 
 - `clear(): void`
 - `resize(newCapacity: number): void` (logical capacity)

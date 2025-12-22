@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BufferManager, createBuffer } from "../core/BufferManager";
 
 /**
@@ -30,10 +30,10 @@ export interface UseCircularBufferReturn<T> {
   /** Current items in the buffer (oldest -> newest) */
   data: T[];
 
-  /** Add a single item or array to the head (front) */
+  /** Add a single item or array to the head (HEAD) */
   pushHead: (input: T | readonly T[]) => void;
 
-  /** Add a single item or array to the tail (back) */
+  /** Add a single item or array to the tail (TAIL) */
   pushTail: (input: T | readonly T[]) => void;
 
   /** Remove and return item(s) from head (oldest) */
@@ -122,15 +122,18 @@ export function useCircularBuffer<T>(
   useEffect(() => {
     buffer.resize(capacity);
     sync();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [capacity]);
+  }, [capacity, buffer, sync]);
 
   // If you want initialItems to apply only once, we are already doing it in lazy init.
   // (If you ever want to re-apply when options.initialItems changes, add an effect intentionally.)
 
   const pushHead = useCallback(
     (input: T | readonly T[]) => {
-      buffer.pushHead(input as any);
+      if (Array.isArray(input)) {
+        buffer.pushHead(input as readonly T[]);
+      } else {
+        buffer.pushHead(input as T);
+      }
       sync();
     },
     [buffer, sync]
@@ -138,40 +141,38 @@ export function useCircularBuffer<T>(
 
   const pushTail = useCallback(
     (input: T | readonly T[]) => {
-      buffer.pushTail(input as any);
+      if (Array.isArray(input)) {
+        buffer.pushTail(input as readonly T[]);
+      } else {
+        buffer.pushTail(input as T);
+      }
       sync();
     },
     [buffer, sync]
   );
 
-  const popHead = useMemo<PopFn<T>>(() => {
-    const fn = ((count?: number) => {
+  const popHead = useCallback(
+    ((count?: number) => {
       const result =
         count === undefined ? buffer.popHead() : buffer.popHead(count);
       sync();
-      return result as any;
-    }) as PopFn<T>;
-    return fn;
-  }, [buffer, sync]);
+      return result;
+    }) as PopFn<T>,
+    [buffer, sync]
+  );
 
-  const popTail = useMemo<PopFn<T>>(() => {
-    const fn = ((count?: number) => {
+  const popTail = useCallback(
+    ((count?: number) => {
       const result =
         count === undefined ? buffer.popTail() : buffer.popTail(count);
       sync();
-      return result as any;
-    }) as PopFn<T>;
-    return fn;
-  }, [buffer, sync]);
+      return result;
+    }) as PopFn<T>,
+    [buffer, sync]
+  );
 
-  const getHead = useCallback(
-    () => buffer.getHead() as T | undefined,
-    [buffer]
-  );
-  const getTail = useCallback(
-    () => buffer.getTail() as T | undefined,
-    [buffer]
-  );
+  const getHead = useCallback(() => buffer.getHead(), [buffer]);
+  const getTail = useCallback(() => buffer.getTail(), [buffer]);
 
   const clear = useCallback(() => {
     buffer.clear();
