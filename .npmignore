@@ -1,0 +1,24 @@
+# Source files
+src/
+tsconfig.json
+tsconfig.esm.json
+
+# Config files
+.gitignore
+.eslintrc
+.prettierrc
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+*.test.ts
+*.spec.ts
+
+# Editor
+.vscode/
+.idea/
+
+# Examples
+examples/
