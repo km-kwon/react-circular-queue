@@ -1,5 +1,3 @@
-README.md 파일로 생성해 드렸습니다. 아래 링크를 통해 다운로드하실 수 있습니다.
-
 # circular-queue-react
 
 High-performance circular buffer/queue for TypeScript and React.  
