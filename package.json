@@ -1,6 +1,6 @@
 {
   "name": "circular-queue-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "High-performance circular buffer/queue for TypeScript and React - Perfect for logs, streaming data, and real-time updates",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",
@@ -44,10 +44,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/circular-queue-react.git"
+    "url": "https://github.com/km-kwon/react-circular-queue.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/circular-queue-react/issues"
+    "url": "https://github.com/km-kwon/react-circular-queue/issues"
   },
-  "homepage": "https://github.com/yourusername/circular-queue-react#readme"
+  "homepage": "https://github.com/km-kwon/react-circular-queue#readme"
 }
