@@ -1,6 +1,11 @@
 # circular-queue-react
 
-High-performance circular buffer/queue for TypeScript and React.  
+[![npm version](https://img.shields.io/npm/v/circular-queue-react.svg)](https://www.npmjs.com/package/circular-queue-react)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/km-kwon/react-circular-queue/actions/workflows/ci.yml/badge.svg)](https://github.com/km-kwon/react-circular-queue/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/km-kwon/react-circular-queue/branch/master/graph/badge.svg)](https://codecov.io/gh/km-kwon/react-circular-queue)
+
+High-performance circular buffer/queue for TypeScript and React.
 Zero dependencies (**React optional**) — perfect for logs, streaming data, rolling windows, and real-time UI updates.
 
 ---

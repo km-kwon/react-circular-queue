@@ -131,8 +131,6 @@ export class CircularBuffer<T> {
    * @param direction - Direction.HEAD or Direction.TAIL
    * @returns A single item if `count` is omitted; otherwise an array
    */
-  get(direction: Direction): T | undefined;
-  get(direction: Direction, count: number): T[];
   get(direction: Direction, count?: number): T | undefined | T[] {
     if (this.size === 0) {
       return count === undefined ? undefined : [];
