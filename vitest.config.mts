@@ -7,6 +7,12 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./__test__/setup.ts",
     include: ["__test__/**/*.test.{ts,tsx}"],
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
