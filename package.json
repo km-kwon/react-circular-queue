@@ -1,6 +1,6 @@
 {
   "name": "circular-queue-react",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "High-performance circular buffer/queue for TypeScript and React - Perfect for logs, streaming data, and real-time updates",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",
