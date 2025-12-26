@@ -430,6 +430,44 @@ class RollingAverage {
 
 ---
 
+## Testing
+
+This package includes comprehensive test coverage using Vitest and React Testing Library.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Test Coverage
+
+The project maintains high test coverage:
+
+- **CircularBuffer**: 100% coverage (32 tests)
+- **BufferManager**: 100% coverage (47 tests)
+- **React Hook (useCircularBuffer)**: 100% coverage (29 tests)
+
+Total: **108 tests** across 3 test suites
+
+Coverage reports are generated in the `coverage/` directory. Open `coverage/index.html` in your browser to view detailed coverage information.
+
+### CI/CD
+
+This project uses GitHub Actions for continuous integration:
+
+- **Automated Testing**: Tests run on Node.js 18, 20, and 22
+- **Build Verification**: Ensures TypeScript compilation succeeds
+- **Coverage Reporting**: Automatic upload to Codecov
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml) for the complete CI configuration.
+
+---
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
